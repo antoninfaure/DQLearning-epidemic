@@ -46,12 +46,12 @@ class Agent(ABC):
         """
     
     @abstractmethod
-    def reset():
+    def reset(self):
         """Resets the agent's inner state
         """
         
     @abstractmethod 
-    def act(self, obs:torch.Tensor)->Tuple[int, float]:
+    def act(self, obs:'Observation', reward)->Tuple[int, float]:
         """Selects an action based on an observation.
 
         Args:

@@ -10,6 +10,7 @@ import random as rd
 from typing import Tuple, Dict, List, Any
 from dataclasses import dataclass
 
+
 @dataclass
 class Parameters():
     """Contains simulation parameters for either a city or the country on a given day
@@ -22,6 +23,7 @@ class Parameters():
     dead: int
     initial_population: int
 
+
 @dataclass
 class Observables():
     """Observation class, contains all observable variables from either the city or the country
@@ -29,25 +31,25 @@ class Observables():
     infected: List[int]
     dead: List[int]
 
+
 @dataclass
 class Observation():
     """Observation class, contains all fields returned when observing the environment
     """
-    pop: Dict[str,float] # Contains the original population of each city
+    pop: Dict[str, float]  # Contains the original population of each city
     city: Dict[str, Observables]
     total: Observables
 
 
 class ModelDynamics():
-    
-    parameters = [  'infected',
-                    'dead',
-                    'suceptible',
-                    'exposed',
-                    'recovered',
-                    'initial_population']
+    parameters = ['infected',
+                  'dead',
+                  'suceptible',
+                  'exposed',
+                  'recovered',
+                  'initial_population']
 
-    def __init__(self, source_file:str):
+    def __init__(self, source_file: str):
         """Initializes the ModelDynamics class, creates a graph and sets epidemic dynamics  parameters from a source yaml file.
 
         Args:
@@ -107,13 +109,13 @@ class ModelDynamics():
             self.ACTION_CARDINALITY = len(self.NULL_ACTION)
 
         except:
-            raise("Invalid YAML scenario file")
+            raise ("Invalid YAML scenario file")
 
         self.total_pop = np.sum([self.map.nodes[n]['pop']
-                                for n in self.map.nodes()])
+                                 for n in self.map.nodes()])
         for e in self.roads:
-            tau = 10*(self.map.nodes[e[0]]['pop'] *
-                      self.map.nodes[e[1]]['pop'])/self.total_pop**2
+            tau = 10 * (self.map.nodes[e[0]]['pop'] / self.total_pop *
+                        self.map.nodes[e[1]]['pop'] / self.total_pop)
             self.map.edges[e]['tau'] = tau
 
         self.reset()
@@ -134,20 +136,18 @@ class ModelDynamics():
         self.extra_hospital_beds = {c: 1 for c in self.cities}
         self.vaccinate = {c: 0 for c in self.cities}
 
-    
-
-    def draw_map(self,):
+    def draw_map(self, ):
         """ Draws the map on which the epidemic is simulated (as a matplotlib plot).
         """
         nx.draw_networkx(self.map,
-                with_labels=True,
-                pos=self.pos_map,
-                node_size=[self.map.nodes[n]['pop'] /
-                           1000 for n in self.map.nodes()],
-                width=[self.map.edges[e]['tau']*10 for e in self.map.edges()]
-                )
+                         with_labels=True,
+                         pos=self.pos_map,
+                         node_size=[self.map.nodes[n]['pop'] /
+                                    1000 for n in self.map.nodes()],
+                         width=[self.map.edges[e]['tau'] * 10 for e in self.map.edges()]
+                         )
 
-    def epidemic_parameters(self, day=None)->Tuple[Dict[str,float],Dict[str,Dict[str,float]]]:
+    def epidemic_parameters(self, day=None) -> Tuple[Dict[str, float], Dict[str, Dict[str, float]]]:
         """ Returns the state of the epidemic propagation.
         
         Args:u
@@ -170,16 +170,16 @@ class ModelDynamics():
 
         for c in self.cities:
             suceptible = np.max(int(
-                np.floor(self.map.nodes[c]['s'] * self.map.nodes[c]['pop'])),0)
+                np.floor(self.map.nodes[c]['s'] * self.map.nodes[c]['pop'])), 0)
             suceptible_total += suceptible
             exposed = np.max(int(
-                np.floor(self.map.nodes[c]['e'] * self.map.nodes[c]['pop'])),0)
+                np.floor(self.map.nodes[c]['e'] * self.map.nodes[c]['pop'])), 0)
             exposed_total += exposed
-            infected =np.max(int(
-                np.floor(self.map.nodes[c]['i'] * self.map.nodes[c]['pop'])),0)
+            infected = np.max(int(
+                np.floor(self.map.nodes[c]['i'] * self.map.nodes[c]['pop'])), 0)
             infected_total += infected
             recovered = np.max(int(
-                np.floor(self.map.nodes[c]['r'] * self.map.nodes[c]['pop'])),0)
+                np.floor(self.map.nodes[c]['r'] * self.map.nodes[c]['pop'])), 0)
             recovered_total += recovered
             dead = np.max(int(
                 np.floor(self.map.nodes[c]['d'] * self.map.nodes[c]['pop'])))
@@ -206,8 +206,8 @@ class ModelDynamics():
             initial_population=total
         )
 
-        return {'total':total, 'cities':cities}
-    
+        return {'total': total, 'cities': cities}
+
     def set_action(self, act, city):
         """ Set the action variables in a given city
         
@@ -228,16 +228,14 @@ class ModelDynamics():
         self.extra_hospital_beds[city] = self.extra_hospital_effectiveness if act['hospital'] else 1
         self.vaccinate[city] = self.vaccination_effectiveness if act['vaccinate'] else 0
 
-    def get_action(self,):
+    def get_action(self, ):
         _c = list(self.c_confined.keys())[0]
         return {'confinement': (self.c_confined[_c] != 1),
-        'isolation': (self.c_isolated[_c] != 1),
-        'vaccinate': (self.vaccinate[_c] != 0),
-        'hospital': (self.extra_hospital_beds[_c] != 1),
-        }
-        
-    
-    
+                'isolation': (self.c_isolated[_c] != 1),
+                'vaccinate': (self.vaccinate[_c] != 0),
+                'hospital': (self.extra_hospital_beds[_c] != 1),
+                }
+
     def start_epidemic(self, seed=10, sources=1, prop=0.01):
         """ Starts the epidemic (infects a given proportion of the population in one or more randomly chosen cities).
         
@@ -274,24 +272,24 @@ class ModelDynamics():
         _total_history = []
         _city_history = []
         # step through a week of simulation to produce one environment step
-        for i in range(self.env_step_length*self.srate):
+        for i in range(self.env_step_length * self.srate):
             self.step_dyn()
-            params = self.epidemic_parameters(day=i/self.srate)
+            params = self.epidemic_parameters(day=i / self.srate)
             _total_history.append(params['total'])
             _city_history.append(params['cities'])
 
         # output observations
         _total = Observables(
-            infected = [t.infected for t in _total_history][self.srate-1::self.srate],
-            dead =  [t.dead for t in _total_history][self.srate-1::self.srate],
+            infected=[t.infected for t in _total_history][self.srate - 1::self.srate],
+            dead=[t.dead for t in _total_history][self.srate - 1::self.srate],
         )
-        _city = {c:Observables(
-                    infected=[t[c].infected for t in _city_history][self.srate-1::self.srate],
-                    dead=[t[c].dead for t in _city_history][self.srate-1::self.srate],
-                ) for c in self.cities}
-            
+        _city = {c: Observables(
+            infected=[t[c].infected for t in _city_history][self.srate - 1::self.srate],
+            dead=[t[c].dead for t in _city_history][self.srate - 1::self.srate],
+        ) for c in self.cities}
+
         _pop = {c: self.map.nodes[c]['pop'] for c in self.cities}
-        
+
         return Observation(
             pop=_pop,
             city=_city,
@@ -317,7 +315,6 @@ class ModelDynamics():
         dd = {}
 
         for c in self.cities:
-
             # query the variables from the graph
             s = self.map.nodes[c]['s']
             e = self.map.nodes[c]['e']
@@ -330,19 +327,19 @@ class ModelDynamics():
             # city - to city contagion
             stoch_t0 = np.max(
                 [np.random.normal(self.tau_0, self.var_tau_0), 0])
-            sum_term = self.c_isolated[c]*stoch_t0 * np.sum([self.map.nodes[a]['i']*self.map.edges[(
-                a, c)]['tau']*self.c_isolated[a] for a in nx.neighbors(self.map, c)])
+            sum_term = self.c_isolated[c] * stoch_t0 * np.sum([self.map.nodes[a]['i'] * self.map.edges[(
+                a, c)]['tau'] * self.c_isolated[a] for a in nx.neighbors(self.map, c)])
 
             # incidence rate
             stoch_alpha = np.max(
-                [np.random.normal(self.alpha*self.c_confined[c], self.var_alpha), 0])
+                [np.random.normal(self.alpha * self.c_confined[c], self.var_alpha), 0])
             new_exposed = stoch_alpha * (s * i + sum_term)
 
             # vaccination
             stoch_mu = self.vaccination_effectiveness / \
-                self.map.nodes[c]['pop'] if self.vaccinate[c] else 0
+                       self.map.nodes[c]['pop'] if self.vaccinate[c] else 0
             new_vaccinated = np.fmax(
-                np.fmin(float(stoch_mu*s), float(stoch_mu)), 0)
+                np.fmin(float(stoch_mu * s), float(stoch_mu)), 0)
 
             # exposure to infection flow
             stoch_eta = np.max([np.random.normal(self.eta, self.eta), 0])
@@ -372,13 +369,13 @@ class ModelDynamics():
 
         for c in self.cities:
             # Euler integration step
-            self.map.nodes[c]['s'] += ds[c]*self.dt
-            self.map.nodes[c]['e'] += de[c]*self.dt
-            self.map.nodes[c]['i'] += di[c]*self.dt
-            self.map.nodes[c]['r'] += dr[c]*self.dt
-            self.map.nodes[c]['d'] += dd[c]*self.dt
-            self.map.nodes[c]['s'] = max(self.map.nodes[c]['s'],0)
-            self.map.nodes[c]['e'] = max(self.map.nodes[c]['e'],0)
-            self.map.nodes[c]['i'] = max(self.map.nodes[c]['i'],0)
-            self.map.nodes[c]['r'] = max(self.map.nodes[c]['r'],0)
-            self.map.nodes[c]['d'] = max(self.map.nodes[c]['d'],0)
+            self.map.nodes[c]['s'] += ds[c] * self.dt
+            self.map.nodes[c]['e'] += de[c] * self.dt
+            self.map.nodes[c]['i'] += di[c] * self.dt
+            self.map.nodes[c]['r'] += dr[c] * self.dt
+            self.map.nodes[c]['d'] += dd[c] * self.dt
+            self.map.nodes[c]['s'] = max(self.map.nodes[c]['s'], 0)
+            self.map.nodes[c]['e'] = max(self.map.nodes[c]['e'], 0)
+            self.map.nodes[c]['i'] = max(self.map.nodes[c]['i'], 0)
+            self.map.nodes[c]['r'] = max(self.map.nodes[c]['r'], 0)
+            self.map.nodes[c]['d'] = max(self.map.nodes[c]['d'], 0)
